@@ -48,7 +48,7 @@
 <body>
     <div id="info">
         <h2>Quiz de Sólidos Geométricos</h2>
-        <p>Clique nas opções para responder às perguntas.</p>
+        <p>Clique nas opções para responder as perguntas</p>
     </div>
 
     <button id="start-button">Iniciar Quiz</button>
@@ -56,7 +56,6 @@
     <a-scene>
         <a-assets>
             <img id="fundo" src="https://cdn.glitch.global/055d0458-3d19-4f9e-9762-b94f09d8e578/bg.jpg?v=1626245842827" />
-            <a-asset-item id="robotoFont" src="https://cdn.aframe.io/fonts/Roboto-msdf.json"></a-asset-item>
         </a-assets>
 
         <a-sky color="#6e9cff"></a-sky>
@@ -73,7 +72,6 @@
             color="#FFF"
             align="left"
             camera-relative
-            font="#robotoFont"
         ></a-text>
 
         <a-text
@@ -85,7 +83,6 @@
             align="center"
             camera-relative
             visible="false"
-            font="#robotoFont"
         ></a-text>
 
         <a-entity id="quiz-container" position="0 1.5 -3">
@@ -104,7 +101,6 @@
                 position="0 1.7 0.06"
                 width="4"
                 color="#FFC107"
-                font="#robotoFont"
             ></a-text>
 
             <a-text
@@ -115,7 +111,6 @@
                 width="3.8"
                 color="#FFF"
                 wrap-count="25"
-                font="#robotoFont"
             ></a-text>
 
             <a-entity id="opcoes" layout="type: box; axis: x; margin: 0.3; width: 5"></a-entity>
@@ -126,7 +121,7 @@
         const quiz = [
             {
                 pergunta: "Qual dessas figuras é um sólido geométrico?",
-                opcoes: ["Quadrado", "Triângulo", "Círculo", "Cubo"],
+                opcoes: ["Quadrado", "Triângulo","Círculo", "Cubo"],
                 respostaCorreta: "Cubo",
             },
             {
@@ -213,7 +208,6 @@
                 textoOpcao.setAttribute("width", "2");
                 textoOpcao.setAttribute("position", "0 0 0.11");
                 textoOpcao.setAttribute("wrap-count", "10");
-                textoOpcao.setAttribute("font", "#robotoFont");
                 botao.appendChild(textoOpcao);
 
                 // Lida com o clique do usuário
@@ -260,3 +254,4 @@
     </script>
 </body>
 </html>
+https://misaelmil.github.io/VR-E/
