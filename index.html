@@ -7,13 +7,17 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <style>
     body { margin:0; padding:0; overflow:hidden; background:#222; }
+    #start-button { 
+      display:none; /* escondido porque agora usamos o botão VR */
+    }
   </style>
 </head>
 <body>
+  <button id="start-button">Iniciar Quiz</button>
+
   <a-scene>
     <a-sky color="#6e9cff"></a-sky>
 
-    <!-- Rig da câmera -->
     <a-entity id="cameraRig" position="0 1.6 0">
       <a-camera id="camera" look-controls>
         <!-- Cursor gaze -->
@@ -24,7 +28,7 @@
       </a-camera>
     </a-entity>
 
-    <!-- Botão inicial VR -->
+    <!-- Botão inicial dentro da cena -->
     <a-entity id="start-button-entity" visible="true" position="0 2 -3">
       <a-box color="#4CAF50" depth="0.2" height="0.6" width="2"></a-box>
       <a-entity text="value: Iniciar Quiz; align: center; color: white; width: 3" position="0 0 0.2"></a-entity>
@@ -37,8 +41,7 @@
       <!-- Opções -->
       <a-entity id="opcoes" position="0 -0.5 0"></a-entity>
       <!-- Mensagem de feedback -->
-      <a-entity id="feedbackLabel" text="value: ; align: center; color: white; width: 3" position="0 -2 0">
-      </a-entity>
+      <a-entity id="feedbackLabel" text="value: ; align: center; color: white; width: 3" position="0 -2 0"></a-entity>
     </a-entity>
   </a-scene>
 
@@ -81,16 +84,25 @@
 
     const perguntaImgEl = document.getElementById("pergunta-img");
     const opcoesEl = document.getElementById("opcoes");
+    const startButton = document.getElementById("start-button"); // preservado
     const quizContainer = document.getElementById("quiz-container");
     const feedbackLabel = document.getElementById("feedbackLabel");
     const scoreLabel = document.getElementById("scoreLabel");
     const camera = document.getElementById("camera");
     const startButtonEntity = document.getElementById("start-button-entity");
 
-    // Iniciar quiz
+    // Clique no botão HTML (backup se alguém testar fora do VR)
+    startButton.addEventListener("click", () => {
+      startButton.style.display="none";
+      startButtonEntity.setAttribute("visible","false");
+      quizContainer.setAttribute("visible","true");
+      carregarPergunta();
+    });
+
+    // Clique no botão VR
     startButtonEntity.addEventListener("click", () => {
-      startButtonEntity.setAttribute("visible", "false");
-      quizContainer.setAttribute("visible", "true");
+      startButtonEntity.setAttribute("visible","false");
+      quizContainer.setAttribute("visible","true");
       carregarPergunta();
     });
 
@@ -104,7 +116,7 @@
       feedbackLabel.setAttribute("text","value: ");
       opcoesEl.innerHTML="";
 
-      // Opções mais afastadas na vertical
+      // Opções afastadas na vertical
       const positions = [
         "-1 0.8 0", "1 0.8 0",
         "-1 -1.2 0", "1 -1.2 0"
