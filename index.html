@@ -3,15 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz de Sólidos Geométricos em A-Frame</title>
+  <title>Quiz VR - Sólidos Geométricos</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <style>
     body { margin:0; padding:0; overflow:hidden; background:#222; }
-    #info {
-      position:absolute; top:10px; left:10px; color:#fff;
-      background:rgba(0,0,0,0.5); padding:10px; border-radius:5px;
-      z-index:1000; transition:opacity 1.5s ease;
-    }
     #start-button {
       position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
       padding:15px 30px; font-size:20px; background:#4CAF50; color:#fff;
@@ -20,28 +15,37 @@
   </style>
 </head>
 <body>
-  <div id="info">
-    <h2>Quiz de Sólidos Geométricos</h2>
-    <p>Olhe para as opções por 2 segundos para responder</p>
-  </div>
-
   <button id="start-button">Iniciar Quiz</button>
 
   <a-scene>
     <a-sky color="#6e9cff"></a-sky>
 
-    <a-camera position="0 1.6 0">
-      <!-- Cursor com gaze de 2 segundos -->
-      <a-cursor fuse="true" fuseTimeout="2000" color="#FFF"></a-cursor>
-    </a-camera>
+    <a-entity id="cameraRig" position="0 1.6 0">
+      <a-camera id="camera" look-controls>
+        <!-- Cursor gaze -->
+        <a-cursor id="cursor" fuse="true" fuseTimeout="2000" color="#FFF"></a-cursor>
 
-    <!-- Container mais afastado -->
-    <a-entity id="quiz-container" position="0 1.5 -4">
-      <!-- Imagem da pergunta -->
+        <!-- Placar no HUD -->
+        <a-entity id="scoreLabel"
+          text="value: Placar: 0; align: left; color: yellow; width: 2"
+          position="-1.2 0.8 -1.5">
+        </a-entity>
+      </a-camera>
+    </a-entity>
+
+    <!-- Container do Quiz -->
+    <a-entity id="quiz-container" position="0 1.5 -4" visible="false">
+      <!-- Pergunta -->
       <a-image id="pergunta-img" position="0 1.5 0" width="3.5" height="1.2"></a-image>
 
-      <!-- Container das opções (grade 2x2) -->
+      <!-- Opções -->
       <a-entity id="opcoes" position="0 -0.5 0"></a-entity>
+
+      <!-- Mensagem de feedback -->
+      <a-entity id="feedbackLabel"
+        text="value: ; align: center; color: white; width: 3"
+        position="0 -2 0">
+      </a-entity>
     </a-entity>
   </a-scene>
 
@@ -114,16 +118,14 @@
     const perguntaImgEl = document.getElementById("pergunta-img");
     const opcoesEl = document.getElementById("opcoes");
     const startButton = document.getElementById("start-button");
-    const infoEl = document.getElementById("info");
     const quizContainer = document.getElementById("quiz-container");
-
-    quizContainer.setAttribute("visible","false");
+    const feedbackLabel = document.getElementById("feedbackLabel");
+    const scoreLabel = document.getElementById("scoreLabel");
+    const camera = document.getElementById("camera");
 
     startButton.addEventListener("click", () => {
       startButton.style.display="none";
-      infoEl.style.opacity="0";
       quizContainer.setAttribute("visible","true");
-      setTimeout(()=>infoEl.style.display="none",1500);
       carregarPergunta();
     });
 
@@ -131,10 +133,9 @@
       if(perguntaAtual>=quiz.length){ finalizarQuiz(); return; }
       const dados=quiz[perguntaAtual];
       perguntaImgEl.setAttribute("src",dados.perguntaImg);
+      feedbackLabel.setAttribute("text","value: ");
+      opcoesEl.innerHTML="";
 
-      opcoesEl.innerHTML=""; // limpa
-
-      // Distribuir em grade 2x2
       const positions = [
         "-1 0.5 0", "1 0.5 0",
         "-1 -0.8 0", "1 -0.8 0"
@@ -143,8 +144,8 @@
       dados.opcoes.forEach((opcao,i)=>{
         const img=document.createElement("a-image");
         img.setAttribute("src",opcao.img);
-        img.setAttribute("width","1.2");
-        img.setAttribute("height","1.2");
+        img.setAttribute("width","1.3");
+        img.setAttribute("height","1.3");
         img.setAttribute("position", positions[i]);
         img.setAttribute("class","opcao");
         img.setAttribute("data-resposta",opcao.resposta);
@@ -156,17 +157,51 @@
     function verificarResposta(selecionada,correta){
       if(selecionada===correta){
         score++;
+        scoreLabel.setAttribute("text",`value: Placar: ${score}`);
+        feedbackLabel.setAttribute("text","value: ✔ Correto!; color: lime");
         perguntaAtual++;
-        carregarPergunta();
+        resetarVisao();
+        setTimeout(carregarPergunta,1500);
       }else{
-        alert("Incorreto! Tente de novo.");
+        feedbackLabel.setAttribute("text","value: ✘ Incorreto!; color: red");
+        resetarVisao();
       }
     }
 
     function finalizarQuiz(){
       perguntaImgEl.setAttribute("src","figpage/final.png");
       opcoesEl.innerHTML="";
-      alert(`Quiz finalizado! Seu placar: ${score} de ${quiz.length}`);
+      feedbackLabel.setAttribute("text",`value: Quiz finalizado! Placar: ${score}/${quiz.length}; color: yellow`);
+
+      // Botão reinício
+      const btn=document.createElement("a-box");
+      btn.setAttribute("color","#4CAF50");
+      btn.setAttribute("depth","0.2");
+      btn.setAttribute("height","0.6");
+      btn.setAttribute("width","2");
+      btn.setAttribute("position","0 -3 0");
+      btn.setAttribute("class","reiniciar");
+
+      const txt=document.createElement("a-entity");
+      txt.setAttribute("text","value: Reiniciar; align: center; color: white; width: 3");
+      txt.setAttribute("position","0 0 0.2");
+      btn.appendChild(txt);
+
+      btn.addEventListener("click", reiniciarQuiz);
+      opcoesEl.appendChild(btn);
+    }
+
+    function reiniciarQuiz(){
+      perguntaAtual=0;
+      score=0;
+      scoreLabel.setAttribute("text","value: Placar: 0");
+      carregarPergunta();
+    }
+
+    function resetarVisao(){
+      // Reposiciona visão ao centro
+      camera.components["look-controls"].pitchObject.rotation.x=0;
+      camera.components["look-controls"].yawObject.rotation.y=0;
     }
   </script>
 </body>
