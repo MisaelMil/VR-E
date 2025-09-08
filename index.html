@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quiz de Sólidos Geométricos em A-Frame</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://unpkg.com/aframe-layout-component@5.3.0/dist/aframe-layout-component.min.js"></script>
   <style>
     body { margin:0; padding:0; overflow:hidden; background:#222; }
     #info {
@@ -36,17 +35,17 @@
       <a-cursor fuse="true" fuseTimeout="2000" color="#FFF"></a-cursor>
     </a-camera>
 
-    <a-entity id="quiz-container" position="0 1.5 -3">
+    <!-- Container mais afastado -->
+    <a-entity id="quiz-container" position="0 1.5 -4">
       <!-- Imagem da pergunta -->
       <a-image id="pergunta-img" position="0 1.5 0" width="3.5" height="1.2"></a-image>
 
-      <!-- Opções -->
-      <a-entity id="opcoes" position="0 -0.3 0" layout="type: line; margin: 1.5"></a-entity>
+      <!-- Container das opções (grade 2x2) -->
+      <a-entity id="opcoes" position="0 -0.5 0"></a-entity>
     </a-entity>
   </a-scene>
 
   <script>
-    // Cada pergunta aponta para imagens já prontas na pasta figpage
     const quiz = [
       {
         perguntaImg: "figpage/pergunta1.png",
@@ -67,8 +66,47 @@
           {img:"figpage/q2d.png", resposta:"12"}
         ],
         correta: "6"
+      },
+      {
+        perguntaImg: "figpage/pergunta3.png",
+        opcoes: [
+          {img:"figpage/q3a.png", resposta:"Cone"},
+          {img:"figpage/q3b.png", resposta:"Esfera"},
+          {img:"figpage/q3c.png", resposta:"Prisma"},
+          {img:"figpage/q3d.png", resposta:"Cubo"}
+        ],
+        correta: "Cone"
+      },
+      {
+        perguntaImg: "figpage/pergunta4.png",
+        opcoes: [
+          {img:"figpage/q4a.png", resposta:"Esfera"},
+          {img:"figpage/q4b.png", resposta:"Cilindro"},
+          {img:"figpage/q4c.png", resposta:"Cubo"},
+          {img:"figpage/q4d.png", resposta:"Pirâmide"}
+        ],
+        correta: "Cubo"
+      },
+      {
+        perguntaImg: "figpage/pergunta5.png",
+        opcoes: [
+          {img:"figpage/q5a.png", resposta:"Cone"},
+          {img:"figpage/q5b.png", resposta:"Cubo"},
+          {img:"figpage/q5c.png", resposta:"Cilindro"},
+          {img:"figpage/q5d.png", resposta:"Pirâmide"}
+        ],
+        correta: "Cilindro"
+      },
+      {
+        perguntaImg: "figpage/pergunta6.png",
+        opcoes: [
+          {img:"figpage/q6a.png", resposta:"Esfera"},
+          {img:"figpage/q6b.png", resposta:"Cilindro"},
+          {img:"figpage/q6c.png", resposta:"Pirâmide"},
+          {img:"figpage/q6d.png", resposta:"Cubo"}
+        ],
+        correta: "Pirâmide"
       }
-      // ...adicione mais seguindo o mesmo padrão
     ];
 
     let perguntaAtual = 0;
@@ -95,11 +133,19 @@
       perguntaImgEl.setAttribute("src",dados.perguntaImg);
 
       opcoesEl.innerHTML=""; // limpa
+
+      // Distribuir em grade 2x2
+      const positions = [
+        "-1 0.5 0", "1 0.5 0",
+        "-1 -0.8 0", "1 -0.8 0"
+      ];
+
       dados.opcoes.forEach((opcao,i)=>{
         const img=document.createElement("a-image");
         img.setAttribute("src",opcao.img);
         img.setAttribute("width","1.2");
         img.setAttribute("height","1.2");
+        img.setAttribute("position", positions[i]);
         img.setAttribute("class","opcao");
         img.setAttribute("data-resposta",opcao.resposta);
         img.addEventListener("click",()=>verificarResposta(opcao.resposta,dados.correta));
@@ -113,7 +159,6 @@
         perguntaAtual++;
         carregarPergunta();
       }else{
-        // dá um feedback visual: treme a opção
         alert("Incorreto! Tente de novo.");
       }
     }
