@@ -1,86 +1,128 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="utf-8">
-  <title>Quiz VR - Cardboard (com imagens)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz de Sólidos Geométricos em A-Frame</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-layout-component@5.3.0/dist/aframe-layout-component.min.js"></script>
+  <style>
+    body { margin:0; padding:0; overflow:hidden; background:#222; }
+    #info {
+      position:absolute; top:10px; left:10px; color:#fff;
+      background:rgba(0,0,0,0.5); padding:10px; border-radius:5px;
+      z-index:1000; transition:opacity 1.5s ease;
+    }
+    #start-button {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      padding:15px 30px; font-size:20px; background:#4CAF50; color:#fff;
+      border:none; border-radius:5px; cursor:pointer; z-index:1000;
+    }
+  </style>
 </head>
 <body>
+  <div id="info">
+    <h2>Quiz de Sólidos Geométricos</h2>
+    <p>Olhe para as opções por 2 segundos para responder</p>
+  </div>
+
+  <button id="start-button">Iniciar Quiz</button>
+
   <a-scene>
     <a-sky color="#6e9cff"></a-sky>
 
-    <!-- Pergunta como imagem -->
-    <a-entity id="pergunta"
-              geometry="primitive: plane; width:2.8; height:0.7"
-              material="src: url(pergunta1.png)"
-              position="0 2 -3">
-    </a-entity>
+    <a-camera position="0 1.6 0">
+      <!-- Cursor com gaze de 2 segundos -->
+      <a-cursor fuse="true" fuseTimeout="2000" color="#FFF"></a-cursor>
+    </a-camera>
 
-    <!-- Opções como imagens -->
-    <a-entity id="op1" class="quiz-btn"
-              geometry="primitive: plane; width:1.3; height:0.5"
-              material="src: url(opcao1_quadrado.png)"
-              position="-1.2 1.2 -3">
-    </a-entity>
+    <a-entity id="quiz-container" position="0 1.5 -3">
+      <!-- Imagem da pergunta -->
+      <a-image id="pergunta-img" position="0 1.5 0" width="3.5" height="1.2"></a-image>
 
-    <a-entity id="op2" class="quiz-btn"
-              geometry="primitive: plane; width:1.3; height:0.5"
-              material="src: url(opcao2_triangulo.png)"
-              position="1.2 1.2 -3">
-    </a-entity>
-
-    <a-entity id="op3" class="quiz-btn"
-              geometry="primitive: plane; width:1.3; height:0.5"
-              material="src: url(opcao3_circulo.png)"
-              position="-1.2 0.4 -3">
-    </a-entity>
-
-    <a-entity id="op4" class="quiz-btn"
-              geometry="primitive: plane; width:1.3; height:0.5"
-              material="src: url(opcao4_cubo.png)"
-              position="1.2 0.4 -3">
-    </a-entity>
-
-    <!-- HUD placar -->
-    <a-entity id="placarText"
-              text="value: Placar: 0; color: white; align: center"
-              position="0 2.6 -3">
-    </a-entity>
-
-    <!-- Câmera + gaze cursor -->
-    <a-entity camera look-controls>
-      <a-cursor fuse="true" fuse-timeout="2000" color="#FFF"></a-cursor>
+      <!-- Opções -->
+      <a-entity id="opcoes" position="0 -0.3 0" layout="type: line; margin: 1.5"></a-entity>
     </a-entity>
   </a-scene>
 
   <script>
-    // Primeira pergunta
-    const respostaCorreta = "Cubo"; // opção 4
+    // Cada pergunta aponta para imagens já prontas na pasta figpage
+    const quiz = [
+      {
+        perguntaImg: "figpage/pergunta1.png",
+        opcoes: [
+          {img:"figpage/q1a.png", resposta:"Quadrado"},
+          {img:"figpage/q1b.png", resposta:"Triângulo"},
+          {img:"figpage/q1c.png", resposta:"Círculo"},
+          {img:"figpage/q1d.png", resposta:"Cubo"}
+        ],
+        correta: "Cubo"
+      },
+      {
+        perguntaImg: "figpage/pergunta2.png",
+        opcoes: [
+          {img:"figpage/q2a.png", resposta:"4"},
+          {img:"figpage/q2b.png", resposta:"6"},
+          {img:"figpage/q2c.png", resposta:"8"},
+          {img:"figpage/q2d.png", resposta:"12"}
+        ],
+        correta: "6"
+      }
+      // ...adicione mais seguindo o mesmo padrão
+    ];
+
+    let perguntaAtual = 0;
     let score = 0;
+    const perguntaImgEl = document.getElementById("pergunta-img");
+    const opcoesEl = document.getElementById("opcoes");
+    const startButton = document.getElementById("start-button");
+    const infoEl = document.getElementById("info");
+    const quizContainer = document.getElementById("quiz-container");
 
-    const placarEl = document.getElementById("placarText");
+    quizContainer.setAttribute("visible","false");
 
-    // Mapeia botões às respostas
-    const respostas = {
-      "op1": "Quadrado",
-      "op2": "Triângulo",
-      "op3": "Círculo",
-      "op4": "Cubo"
-    };
-
-    // Seleção com gaze
-    document.querySelectorAll('.quiz-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        const id = btn.getAttribute('id');
-        const escolha = respostas[id];
-        if (escolha === respostaCorreta) {
-          score++;
-          placarEl.setAttribute('text','value',`Correto! Placar: ${score}`);
-        } else {
-          placarEl.setAttribute('text','value',`Incorreto! Tente novamente. Placar: ${score}`);
-        }
-      });
+    startButton.addEventListener("click", () => {
+      startButton.style.display="none";
+      infoEl.style.opacity="0";
+      quizContainer.setAttribute("visible","true");
+      setTimeout(()=>infoEl.style.display="none",1500);
+      carregarPergunta();
     });
+
+    function carregarPergunta(){
+      if(perguntaAtual>=quiz.length){ finalizarQuiz(); return; }
+      const dados=quiz[perguntaAtual];
+      perguntaImgEl.setAttribute("src",dados.perguntaImg);
+
+      opcoesEl.innerHTML=""; // limpa
+      dados.opcoes.forEach((opcao,i)=>{
+        const img=document.createElement("a-image");
+        img.setAttribute("src",opcao.img);
+        img.setAttribute("width","1.2");
+        img.setAttribute("height","1.2");
+        img.setAttribute("class","opcao");
+        img.setAttribute("data-resposta",opcao.resposta);
+        img.addEventListener("click",()=>verificarResposta(opcao.resposta,dados.correta));
+        opcoesEl.appendChild(img);
+      });
+    }
+
+    function verificarResposta(selecionada,correta){
+      if(selecionada===correta){
+        score++;
+        perguntaAtual++;
+        carregarPergunta();
+      }else{
+        // dá um feedback visual: treme a opção
+        alert("Incorreto! Tente de novo.");
+      }
+    }
+
+    function finalizarQuiz(){
+      perguntaImgEl.setAttribute("src","figpage/final.png");
+      opcoesEl.innerHTML="";
+      alert(`Quiz finalizado! Seu placar: ${score} de ${quiz.length}`);
+    }
   </script>
 </body>
 </html>
