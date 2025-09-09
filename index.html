@@ -166,6 +166,7 @@
     const opcoesEl = document.getElementById("opcoes");
     const feedbackLabel = document.getElementById("feedbackLabel");
     const scoreLabel = document.getElementById("scoreLabel");
+    const camera = document.getElementById("camera");
 
     let perguntaAtual = 0;
     let score = 0;
@@ -177,6 +178,7 @@
     startBox.addEventListener("click", () => {
       startEntity.setAttribute("visible", "false");
       quizContainer.setAttribute("visible", "true");
+      resetarVisao();
       carregarPergunta();
     });
 
@@ -216,9 +218,11 @@
         scoreLabel.setAttribute("text", `value: Placar: ${score}`);
         feedbackLabel.setAttribute("text", "value: ✔ Correto!; color: lime");
         perguntaAtual++;
+        resetarVisao(); // 🔹 recentraliza
         setTimeout(carregarPergunta, 1200);
       } else {
         feedbackLabel.setAttribute("text", "value: ✘ Incorreto!; color: red");
+        resetarVisao(); // 🔹 também no erro
       }
     }
 
@@ -252,7 +256,16 @@
       perguntaAtual = 0;
       score = 0;
       scoreLabel.setAttribute("text", "value: Placar: 0");
+      resetarVisao();
       carregarPergunta();
+    }
+
+    /* --- Função para recentralizar a visão --- */
+    function resetarVisao(){
+      if(camera && camera.components["look-controls"]){
+        camera.components["look-controls"].pitchObject.rotation.x = 0;
+        camera.components["look-controls"].yawObject.rotation.y = 0;
+      }
     }
   </script>
 </body>
