@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Quiz VR com Tela Inicial</title>
+  <title>Quiz VR com Tela Inicial Interativa</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <style> body { margin: 0; background: #000; } </style>
 
   <script>
-    /* --- Componente para girar objetos lentamente --- */
+    /* --- ROTACIONAR OBJETOS --- */
     AFRAME.registerComponent('rotate', {
       schema: { speed: { type: 'number', default: 0.3 } },
       tick: function (time, deltaTime) {
@@ -16,98 +16,160 @@
       }
     });
 
-    /* --- Componente para recentralizar visão com animação suave --- */
-    AFRAME.registerComponent("smooth-look-reset", {
-      schema: { duration: { type: "number", default: 800 } }, // ms
+    /* --- MOSTRAR ARESTAS --- */
+    AFRAME.registerComponent('wireframe', {
+      schema: { color: { type: 'string', default: 'white' } },
       init: function () {
-        this.startRotation = null;
-        this.startTime = null;
-        this.animating = false;
-      },
-      tick: function (time, delta) {
-        if (!this.animating) return;
-        if (this.startTime === null) this.startTime = time;
-        const progress = Math.min((time - this.startTime) / this.data.duration, 1);
-        const ease = 0.5 - 0.5 * Math.cos(progress * Math.PI); // easing suave
-        this.el.object3D.rotation.x = THREE.MathUtils.lerp(this.startRotation.x, 0, ease);
-        this.el.object3D.rotation.y = THREE.MathUtils.lerp(this.startRotation.y, 0, ease);
-        if (progress >= 1) this.animating = false;
-      },
-      reset: function () {
-        this.startRotation = this.el.object3D.rotation.clone();
-        this.startTime = null;
-        this.animating = true;
+        const mesh = this.el.getObject3D('mesh');
+        if (mesh) {
+          const wireframe = new THREE.WireframeGeometry(mesh.geometry);
+          const line = new THREE.LineSegments(wireframe);
+          line.material.depthTest = false;
+          line.material.opacity = 0.5;
+          line.material.transparent = true;
+          line.material.color = new THREE.Color(this.data.color);
+          this.el.object3D.add(line);
+        }
       }
     });
+
+    /* --- DESTACAR VÉRTICES --- */
+    function highlightVertices(el) {
+      const mesh = el.getObject3D('mesh');
+      if (!mesh || !mesh.geometry || !mesh.geometry.attributes.position) return;
+
+      const pos = mesh.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const v = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+        const sphere = document.createElement('a-sphere');
+        sphere.setAttribute('position', `${v.x} ${v.y} ${v.z}`);
+        sphere.setAttribute('radius', '0.05');
+        sphere.setAttribute('color', 'yellow');
+        el.appendChild(sphere);
+      }
+    }
+
+    /* --- MOSTRAR INFORMAÇÕES --- */
+    function displaySolidInfo(type) {
+      const infoEntity = document.querySelector('#solid-info');
+      const solidsData = {
+        tetrahedron: { faces: 4, vertices: 4, edges: 6 },
+        cube: { faces: 6, vertices: 8, edges: 12 },
+        octahedron: { faces: 8, vertices: 6, edges: 12 },
+        dodecahedron: { faces: 12, vertices: 20, edges: 30 },
+        icosahedron: { faces: 20, vertices: 12, edges: 30 }
+      };
+      const data = solidsData[type];
+      if (data) {
+        infoEntity.setAttribute('value', `Faces: ${data.faces}\nVértices: ${data.vertices}\nArestas: ${data.edges}`);
+      } else {
+        infoEntity.setAttribute('value', '');
+      }
+    }
+
+    /* --- SELEÇÃO AO OLHAR --- */
+    AFRAME.registerComponent('select-on-hover', {
+      schema: { target: { type: 'string' } },
+      init: function () {
+        let timeout;
+        const data = this.data;
+        this.el.addEventListener('mouseenter', () => {
+          timeout = setTimeout(() => {
+            document.querySelectorAll('.model').forEach(m => {
+              m.setAttribute('visible', false);
+              m.innerHTML = '';
+            });
+            const selected = document.querySelector(`#${data.target}`);
+            selected.setAttribute('visible', true);
+            selected.setAttribute('scale', '2 2 2');
+            selected.setAttribute('position', '0 1.5 -3');
+            selected.setAttribute('rotate', 'speed: 0.3');
+            displaySolidInfo(data.target);
+            highlightVertices(selected);
+          }, 2000);
+        });
+        this.el.addEventListener('mouseleave', () => clearTimeout(timeout));
+      }
+    });
+
+    /* --- RECENTRALIZAR VISÃO (SECO) --- */
+    function resetarVisao() {
+      const camera = document.querySelector('#camera');
+      if (camera) {
+        camera.setAttribute('rotation', '0 0 0');
+        camera.parentEl.setAttribute('position', '0 1.6 0');
+      }
+    }
   </script>
 </head>
 <body>
 <a-scene>
-  <!-- Câmera + cursor -->
+  <!-- CAMERA -->
   <a-entity id="cameraRig" position="0 1.6 0">
-    <a-camera id="camera" look-controls smooth-look-reset>
+    <a-camera id="camera" look-controls>
       <a-cursor id="cursor"
-                fuse="true"
-                fuse-timeout="1500"
+                fuse="true" fuse-timeout="1500"
                 color="yellow"
-                raycaster="objects: .clickable">
-      </a-cursor>
-
-      <!-- HUD placar (invisível até quiz começar) -->
+                raycaster="objects: .clickable"></a-cursor>
       <a-entity id="scoreLabel"
                 text="value: Placar: 0; align: left; color: yellow; width: 2"
                 position="-1.2 0.8 -1.5"
-                visible="false">
-      </a-entity>
+                visible="false"></a-entity>
     </a-camera>
   </a-entity>
 
-  <!-- ====== TELA INICIAL COM SÓLIDOS ====== -->
+  <!-- ====== TELA INICIAL ====== -->
   <a-entity id="tela-inicial">
-    <!-- Objetos em fila -->
-    <a-entity position="-4 2 -5">
-      <a-entity geometry="primitive: tetrahedron" material="color: #FF0000; opacity: 0.5" rotate></a-entity>
+    <!-- Objetos -->
+    <a-entity position="-6 2 -5" select-on-hover="target: tetrahedron">
+      <a-entity geometry="primitive: tetrahedron" material="color: #FF0000; opacity: 0.5" rotate wireframe></a-entity>
       <a-text value="Tetraedro" align="center" position="0 -1 0" color="white"></a-text>
     </a-entity>
-    <a-entity position="-2 2 -5">
-      <a-entity geometry="primitive: box" material="color: #00FF00; opacity: 0.5" rotate></a-entity>
+    <a-entity position="-3 2 -5" select-on-hover="target: cube">
+      <a-entity geometry="primitive: box" material="color: #00FF00; opacity: 0.5" rotate wireframe></a-entity>
       <a-text value="Cubo" align="center" position="0 -1 0" color="white"></a-text>
     </a-entity>
-    <a-entity position="0 2 -5">
-      <a-entity geometry="primitive: octahedron" material="color: #0000FF; opacity: 0.5" rotate></a-entity>
+    <a-entity position="0 2 -5" select-on-hover="target: octahedron">
+      <a-entity geometry="primitive: octahedron" material="color: #0000FF; opacity: 0.5" rotate wireframe></a-entity>
       <a-text value="Octaedro" align="center" position="0 -1 0" color="white"></a-text>
     </a-entity>
-    <a-entity position="2 2 -5">
-      <a-entity geometry="primitive: dodecahedron" material="color: #FFFF00; opacity: 0.5" rotate></a-entity>
+    <a-entity position="3 2 -5" select-on-hover="target: dodecahedron">
+      <a-entity geometry="primitive: dodecahedron" material="color: #FFFF00; opacity: 0.5" rotate wireframe></a-entity>
       <a-text value="Dodecaedro" align="center" position="0 -1 0" color="white"></a-text>
     </a-entity>
-    <a-entity position="4 2 -5">
-      <a-entity geometry="primitive: icosahedron" material="color: #FF00FF; opacity: 0.5" rotate></a-entity>
+    <a-entity position="6 2 -5" select-on-hover="target: icosahedron">
+      <a-entity geometry="primitive: icosahedron" material="color: #FF00FF; opacity: 0.5" rotate wireframe></a-entity>
       <a-text value="Icosaedro" align="center" position="0 -1 0" color="white"></a-text>
     </a-entity>
 
-    <!-- Botão inicial -->
-    <a-entity id="startButtonEntity" position="0 0 -3">
-      <a-box id="startBox" class="clickable"
-             color="#4CAF50" depth="0.2" height="0.6" width="2">
-      </a-box>
-      <a-entity text="value: Iniciar Quiz; align:center; color:#fff; width:2"
-                position="0 0 0.11"></a-entity>
+    <!-- Modelos centrais -->
+    <a-entity id="tetrahedron" class="model" geometry="primitive: tetrahedron" visible="false"></a-entity>
+    <a-entity id="cube" class="model" geometry="primitive: box" visible="false"></a-entity>
+    <a-entity id="octahedron" class="model" geometry="primitive: octahedron" visible="false"></a-entity>
+    <a-entity id="dodecahedron" class="model" geometry="primitive: dodecahedron" visible="false"></a-entity>
+    <a-entity id="icosahedron" class="model" geometry="primitive: icosahedron" visible="false"></a-entity>
+
+    <a-text id="solid-info" position="0 -2 -3" align="center" color="white" value=""></a-text>
+
+    <!-- Botão iniciar -->
+    <a-entity id="startButtonEntity" position="0 -1 -3">
+      <a-box id="startBox" class="clickable" color="#4CAF50" depth="0.2" height="0.6" width="2"></a-box>
+      <a-entity text="value: Iniciar Quiz; align:center; color:#fff; width:2" position="0 0 0.11"></a-entity>
     </a-entity>
   </a-entity>
 
-  <!-- ====== QUIZ (inicialmente oculto) ====== -->
+  <!-- ====== QUIZ ====== -->
   <a-entity id="quiz-container" position="0 2.9 -4" visible="false">
     <a-image id="pergunta-img" position="0 1.5 0" width="3.5" height="1.2"></a-image>
     <a-entity id="opcoes" position="0 -0.5 0"></a-entity>
     <a-entity id="feedbackLabel"
-      text="value: ; align: center; color: white; width: 3"
-      position="0 -2 0">
-    </a-entity>
+              text="value: ; align: center; color: white; width: 3"
+              position="0 -2 0"></a-entity>
   </a-entity>
 </a-scene>
 
 <script>
+  /* Perguntas do quiz */
   const quiz = [
     { perguntaImg: "figpage/pergunta1.png", opcoes: [
       {img:"figpage/q1a.png", resposta:"Quadrado"},
@@ -118,8 +180,13 @@
       {img:"figpage/q2a.png", resposta:"4"},
       {img:"figpage/q2b.png", resposta:"6"},
       {img:"figpage/q2c.png", resposta:"8"},
-      {img:"figpage/q2d.png", resposta:"12"} ], correta: "6" }
-    // ... continue com as demais perguntas ...
+      {img:"figpage/q2d.png", resposta:"12"} ], correta: "6" },
+    { perguntaImg: "figpage/pergunta3.png", opcoes: [
+      {img:"figpage/q3a.png", resposta:"Esfera"},
+      {img:"figpage/q3b.png", resposta:"Cone"},
+      {img:"figpage/q3c.png", resposta:"Cilindro"},
+      {img:"figpage/q3d.png", resposta:"Pirâmide"} ], correta: "Cilindro" }
+    // adicione mais perguntas aqui se quiser
   ];
 
   const startBox = document.getElementById("startBox");
@@ -129,13 +196,11 @@
   const opcoesEl = document.getElementById("opcoes");
   const feedbackLabel = document.getElementById("feedbackLabel");
   const scoreLabel = document.getElementById("scoreLabel");
-  const camera = document.getElementById("camera");
 
   let perguntaAtual = 0;
   let score = 0;
 
-  startBox.addEventListener("mouseenter", () => startBox.setAttribute("color", "#66d966"));
-  startBox.addEventListener("mouseleave", () => startBox.setAttribute("color", "#4CAF50"));
+  /* Botão iniciar */
   startBox.addEventListener("click", () => {
     telaInicial.setAttribute("visible", "false");
     quizContainer.setAttribute("visible", "true");
@@ -144,14 +209,13 @@
     carregarPergunta();
   });
 
+  /* Carregar pergunta */
   function carregarPergunta(){
     if (perguntaAtual >= quiz.length) { finalizarQuiz(); return; }
     const dados = quiz[perguntaAtual];
-
     perguntaImgEl.setAttribute("src", dados.perguntaImg);
     feedbackLabel.setAttribute("text", "value: ");
     opcoesEl.innerHTML = "";
-
     const positions = ["-1 0.5 0", "1 0.5 0", "-1 -0.8 0", "1 -0.8 0"];
     dados.opcoes.forEach((opcao, i) => {
       const img = document.createElement("a-image");
@@ -163,10 +227,10 @@
       img.addEventListener("click", () => verificarResposta(opcao.resposta, dados.correta));
       opcoesEl.appendChild(img);
     });
-
     scoreLabel.setAttribute("text", `value: Placar: ${score}`);
   }
 
+  /* Verificar resposta */
   function verificarResposta(selecionada, correta){
     if(selecionada === correta){
       score++;
@@ -181,11 +245,11 @@
     }
   }
 
+  /* Finalizar quiz */
   function finalizarQuiz(){
     perguntaImgEl.setAttribute("src", "figpage/final.png");
     opcoesEl.innerHTML = "";
     feedbackLabel.setAttribute("text", `value: Quiz finalizado! Placar: ${score}/${quiz.length}; color: yellow`);
-
     const btn = document.createElement("a-box");
     btn.setAttribute("color", "#4CAF50");
     btn.setAttribute("depth", "0.2");
@@ -193,26 +257,21 @@
     btn.setAttribute("width", "2");
     btn.setAttribute("position", "0 -3 0");
     btn.setAttribute("class", "reiniciar clickable");
-
     const txt = document.createElement("a-entity");
     txt.setAttribute("text", "value: Reiniciar; align: center; color: white; width: 3");
     txt.setAttribute("position", "0 0 0.12");
     btn.appendChild(txt);
-
     btn.addEventListener("click", reiniciarQuiz);
     opcoesEl.appendChild(btn);
   }
 
+  /* Reiniciar quiz */
   function reiniciarQuiz(){
     perguntaAtual = 0;
     score = 0;
     scoreLabel.setAttribute("text", "value: Placar: 0");
     resetarVisao();
     carregarPergunta();
-  }
-
-  function resetarVisao(){
-    camera.components["smooth-look-reset"].reset();
   }
 </script>
 </body>
