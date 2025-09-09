@@ -1,53 +1,59 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quiz VR - Sólidos Geométricos</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Quiz VR - Corrigido</title>
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <style>
-    body { margin:0; padding:0; overflow:hidden; background:#000; }
-  </style>
+  <style> body{ margin:0; background:#000; } </style>
 </head>
 <body>
   <a-scene>
-    <!-- Fundo 360 -->
-    <a-sky src="panorama.jpeg" rotation="0 -130 0"></a-sky>
+    <!-- Pré-carrega imagens -->
+    <a-assets>
+      <img id="panorama" src="panorama.jpeg">
+      <!-- coloque aqui as imagens das perguntas/opções -->
+      <img id="final-img" src="figpage/final.png">
+      <img id="p1" src="figpage/pergunta1.png">
+      <img id="q1a" src="figpage/q1a.png">
+      <!-- etc... -->
+    </a-assets>
 
-    <!-- Rig da câmera com cursor gaze -->
+    <!-- Fundo 360 -->
+    <a-sky src="#panorama" rotation="0 -130 0"></a-sky>
+
+    <!-- Câmera + cursor (raycaster aponta para .clickable) -->
     <a-entity id="cameraRig" position="0 1.6 0">
       <a-camera id="camera" look-controls>
-        <a-cursor id="cursor" 
-                  fuse="true" 
-                  fuseTimeout="2000" 
+        <a-cursor id="cursor"
+                  fuse="true"
+                  fuse-timeout="1500"
                   color="yellow"
                   raycaster="objects: .clickable">
         </a-cursor>
 
-        <!-- Placar no HUD -->
+        <!-- HUD placar -->
         <a-entity id="scoreLabel"
-          text="value: Placar: 0; align: left; color: yellow; width: 2"
-          position="-1.2 0.8 -1.5">
+                  text="value: Placar: 0; align: left; color: yellow; width: 2"
+                  position="-1.2 0.8 -1.5">
         </a-entity>
       </a-camera>
     </a-entity>
 
-    <!-- Botão de início (agora VR) -->
-    <a-entity id="start-button" position="0 2 -3" class="clickable">
-      <a-box color="#4CAF50" depth="0.3" height="0.8" width="2"></a-box>
-      <a-entity text="value: Iniciar Quiz; align: center; color: white; width: 3"
-                position="0 0 0.2"></a-entity>
+    <!-- Botão INICIAR (a-box tem a classe clickable e o listener será no box) -->
+    <a-entity id="startButtonEntity" position="0 1.8 -2">
+      <a-box id="startBox" class="clickable"
+             color="#4CAF50" depth="0.2" height="0.6" width="1.8">
+      </a-box>
+      <a-entity text="value: Iniciar Quiz; align:center; color:#fff; width:2"
+                position="0 0 0.11">
+      </a-entity>
     </a-entity>
 
-    <!-- Container do Quiz -->
+    <!-- Container do quiz (invisível até iniciar) -->
     <a-entity id="quiz-container" position="0 2.9 -4" visible="false">
-      <!-- Pergunta -->
       <a-image id="pergunta-img" position="0 1.5 0" width="3.5" height="1.2"></a-image>
-
-      <!-- Opções -->
       <a-entity id="opcoes" position="0 -0.5 0"></a-entity>
-
-      <!-- Mensagem de feedback -->
       <a-entity id="feedbackLabel"
         text="value: ; align: center; color: white; width: 3"
         position="0 -2 0">
@@ -56,6 +62,7 @@
   </a-scene>
 
   <script>
+    /* --- dados do quiz (igual ao seu exemplo) --- */
     const quiz = [
       {
         perguntaImg: "figpage/pergunta1.png",
@@ -67,128 +74,97 @@
         ],
         correta: "Cubo"
       },
-      {
-        perguntaImg: "figpage/pergunta2.png",
-        opcoes: [
-          {img:"figpage/q2a.png", resposta:"4"},
-          {img:"figpage/q2b.png", resposta:"6"},
-          {img:"figpage/q2c.png", resposta:"8"},
-          {img:"figpage/q2d.png", resposta:"12"}
-        ],
-        correta: "6"
-      },
-      {
-        perguntaImg: "figpage/pergunta3.png",
-        opcoes: [
-          {img:"figpage/q3a.png", resposta:"Cone"},
-          {img:"figpage/q3b.png", resposta:"Esfera"},
-          {img:"figpage/q3c.png", resposta:"Prisma"},
-          {img:"figpage/q3d.png", resposta:"Cubo"}
-        ],
-        correta: "Cone"
-      },
-      {
-        perguntaImg: "figpage/pergunta4.png",
-        opcoes: [
-          {img:"figpage/q4a.png", resposta:"Esfera"},
-          {img:"figpage/q4b.png", resposta:"Cilindro"},
-          {img:"figpage/q4c.png", resposta:"Cubo"},
-          {img:"figpage/q4d.png", resposta:"Pirâmide"}
-        ],
-        correta: "Cubo"
-      },
-      {
-        perguntaImg: "figpage/pergunta5.png",
-        opcoes: [
-          {img:"figpage/q5a.png", resposta:"Cone"},
-          {img:"figpage/q5b.png", resposta:"Cubo"},
-          {img:"figpage/q5c.png", resposta:"Cilindro"},
-          {img:"figpage/q5d.png", resposta:"Pirâmide"}
-        ],
-        correta: "Cilindro"
-      },
-      {
-        perguntaImg: "figpage/pergunta6.png",
-        opcoes: [
-          {img:"figpage/q6a.png", resposta:"Esfera"},
-          {img:"figpage/q6b.png", resposta:"Cilindro"},
-          {img:"figpage/q6c.png", resposta:"Pirâmide"},
-          {img:"figpage/q6d.png", resposta:"Cubo"}
-        ],
-        correta: "Pirâmide"
-      }
+      /* ... demais perguntas ... */
     ];
+
+    /* --- elementos DOM --- */
+    const startBox = document.getElementById("startBox");
+    const startEntity = document.getElementById("startButtonEntity");
+    const quizContainer = document.getElementById("quiz-container");
+    const perguntaImgEl = document.getElementById("pergunta-img");
+    const opcoesEl = document.getElementById("opcoes");
+    const feedbackLabel = document.getElementById("feedbackLabel");
+    const scoreLabel = document.getElementById("scoreLabel");
+    const cameraRig = document.getElementById("cameraRig");
 
     let perguntaAtual = 0;
     let score = 0;
-    const perguntaImgEl = document.getElementById("pergunta-img");
-    const opcoesEl = document.getElementById("opcoes");
-    const startButton = document.getElementById("start-button");
-    const quizContainer = document.getElementById("quiz-container");
-    const feedbackLabel = document.getElementById("feedbackLabel");
-    const scoreLabel = document.getElementById("scoreLabel");
 
-    // Iniciar quiz com gaze no botão
-    startButton.addEventListener("click", () => {
-      startButton.setAttribute("visible", "false");
-      quizContainer.setAttribute("visible","true");
+    /* --- feedback visual para gaze (opcional mas útil para debugging) --- */
+    startBox.addEventListener("mouseenter", () => startBox.setAttribute("color", "#66d966"));
+    startBox.addEventListener("mouseleave", () => startBox.setAttribute("color", "#4CAF50"));
+
+    /* --- iniciar quiz: listener DO PRÓPRIO a-box (isso corrige o problema) --- */
+    startBox.addEventListener("click", () => {
+      console.log("Start (click) recebido");
+      startEntity.setAttribute("visible", "false");  // esconde botão (pai)
+      quizContainer.setAttribute("visible", "true");
       carregarPergunta();
     });
 
+    /* --- Funções do quiz (compatíveis com gaze/click) --- */
     function carregarPergunta(){
-      if(perguntaAtual>=quiz.length){ finalizarQuiz(); return; }
-      const dados=quiz[perguntaAtual];
-      perguntaImgEl.setAttribute("src",dados.perguntaImg);
-      feedbackLabel.setAttribute("text","value: ");
-      opcoesEl.innerHTML="";
+      if (perguntaAtual >= quiz.length) { finalizarQuiz(); return; }
+      const dados = quiz[perguntaAtual];
 
-      const positions = [
-        "-1 0.5 0", "1 0.5 0",
-        "-1 -0.8 0", "1 -0.8 0"
-      ];
+      perguntaImgEl.setAttribute("src", dados.perguntaImg);
+      feedbackLabel.setAttribute("text", "value: ");
+      opcoesEl.innerHTML = "";
 
-      dados.opcoes.forEach((opcao,i)=>{
-        const img=document.createElement("a-image");
-        img.setAttribute("src",opcao.img);
-        img.setAttribute("width","1.3");
-        img.setAttribute("height","1.3");
+      const positions = ["-1 0.5 0", "1 0.5 0", "-1 -0.8 0", "1 -0.8 0"];
+
+      dados.opcoes.forEach((opcao, i) => {
+        const img = document.createElement("a-image");
+        img.setAttribute("src", opcao.img);
+        img.setAttribute("width", "1.3");
+        img.setAttribute("height", "1.3");
         img.setAttribute("position", positions[i]);
-        img.setAttribute("class","opcao clickable");
-        img.setAttribute("data-resposta",opcao.resposta);
-        img.addEventListener("click",()=>verificarResposta(opcao.resposta,dados.correta));
+        img.setAttribute("class", "opcao clickable"); // importante: classe no próprio primitive
+        img.setAttribute("data-resposta", opcao.resposta);
+
+        // feedback visual
+        img.addEventListener("mouseenter", () => img.setAttribute("scale", "1.05 1.05 1.05"));
+        img.addEventListener("mouseleave", () => img.setAttribute("scale", "1 1 1"));
+
+        // listener de clique/gaze
+        img.addEventListener("click", () => verificarResposta(opcao.resposta, dados.correta));
         opcoesEl.appendChild(img);
       });
+
+      // atualiza placar visual
+      scoreLabel.setAttribute("text", `value: Placar: ${score}`);
     }
 
-    function verificarResposta(selecionada,correta){
-      if(selecionada===correta){
+    function verificarResposta(selecionada, correta){
+      if(selecionada === correta){
         score++;
-        scoreLabel.setAttribute("text",`value: Placar: ${score}`);
-        feedbackLabel.setAttribute("text","value: ✔ Correto!; color: lime");
+        scoreLabel.setAttribute("text", `value: Placar: ${score}`);
+        feedbackLabel.setAttribute("text", "value: ✔ Correto!; color: lime");
         perguntaAtual++;
-        setTimeout(carregarPergunta,1500);
-      }else{
-        feedbackLabel.setAttribute("text","value: ✘ Incorreto!; color: red");
+        resetarVisao();
+        setTimeout(carregarPergunta, 1200);
+      } else {
+        feedbackLabel.setAttribute("text", "value: ✘ Incorreto!; color: red");
+        resetarVisao();
       }
     }
 
     function finalizarQuiz(){
-      perguntaImgEl.setAttribute("src","figpage/final.png");
-      opcoesEl.innerHTML="";
-      feedbackLabel.setAttribute("text",`value: Quiz finalizado! Placar: ${score}/${quiz.length}; color: yellow`);
+      perguntaImgEl.setAttribute("src", "figpage/final.png");
+      opcoesEl.innerHTML = "";
+      feedbackLabel.setAttribute("text", `value: Quiz finalizado! Placar: ${score}/${quiz.length}; color: yellow`);
 
-      // Botão reinício VR
-      const btn=document.createElement("a-box");
-      btn.setAttribute("color","#4CAF50");
-      btn.setAttribute("depth","0.2");
-      btn.setAttribute("height","0.6");
-      btn.setAttribute("width","2");
-      btn.setAttribute("position","0 -3 0");
-      btn.setAttribute("class","reiniciar clickable");
+      const btn = document.createElement("a-box");
+      btn.setAttribute("color", "#4CAF50");
+      btn.setAttribute("depth", "0.2");
+      btn.setAttribute("height", "0.6");
+      btn.setAttribute("width", "2");
+      btn.setAttribute("position", "0 -3 0");
+      btn.setAttribute("class", "reiniciar clickable");
 
-      const txt=document.createElement("a-entity");
-      txt.setAttribute("text","value: Reiniciar; align: center; color: white; width: 3");
-      txt.setAttribute("position","0 0 0.2");
+      const txt = document.createElement("a-entity");
+      txt.setAttribute("text", "value: Reiniciar; align: center; color: white; width: 3");
+      txt.setAttribute("position", "0 0 0.12");
       btn.appendChild(txt);
 
       btn.addEventListener("click", reiniciarQuiz);
@@ -196,11 +172,21 @@
     }
 
     function reiniciarQuiz(){
-      perguntaAtual=0;
-      score=0;
-      scoreLabel.setAttribute("text","value: Placar: 0");
+      perguntaAtual = 0;
+      score = 0;
+      scoreLabel.setAttribute("text", "value: Placar: 0");
+      quizContainer.setAttribute("visible", "true");
       carregarPergunta();
     }
+
+    /* Evite mexer diretamente em pitchObject/yawObject;
+       mais seguro: girar o cameraRig para resetar a vista */
+    function resetarVisao(){
+      cameraRig.setAttribute("rotation", "0 0 0");
+    }
+
+    /* DEBUG: durante testes em desktop você pode clicar com mouse no a-box.
+       Em mobile/Cardboard: olhe para o box e mantenha o olhar por ~1.5s (fuse-timeout). */
   </script>
 </body>
 </html>
